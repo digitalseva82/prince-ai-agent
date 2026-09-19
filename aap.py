@@ -1,261 +1,163 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
-import plotly.express as px
-import google.generativeai as genai
 
 # ---------------------------------------------------------
-# Page Config - Wide & Clean Excel Layout
+# Page Config (Excel Layout)
 # ---------------------------------------------------------
-st.set_page_config(
-    page_title="Microsoft Excel - AI Enterprise Edition",
-    page_icon="🟢",
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
+st.set_page_config(page_title="Enterprise AI Analytics Suite", page_icon="📗", layout="wide")
 
-# ---------------------------------------------------------
-# Custom CSS: Authentic MS Excel Desktop UI Styling
-# ---------------------------------------------------------
+# Custom CSS - Microsoft Office / Excel Style Custom Ribbon Styling
 st.markdown("""
     <style>
-    /* Global Excel Theme */
+    /* Desktop App Background */
     .stApp {
-        background-color: #f3f3f3;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f3f2f1;
     }
     
-    /* Top Title Bar (Excel Header Green) */
-    .excel-header {
+    /* Top Header Bar */
+    .top-header {
         background-color: #107C41;
         color: white;
-        padding: 8px 16px;
-        font-size: 16px;
+        padding: 6px 16px;
+        font-size: 14px;
         font-weight: 600;
         display: flex;
-        align-items: center;
         justify-content: space-between;
-        border-bottom: 1px solid #0b592e;
+        align-items: center;
     }
 
-    /* Ribbon Tabs Bar */
-    .ribbon-menu {
-        background-color: #f3f2f1;
-        padding: 6px 12px;
-        border-bottom: 1px solid #e1dfdd;
-    }
-
-    /* Formula Bar Styling */
-    .formula-bar-container {
+    /* Ribbon Box Container */
+    .ribbon-container {
         background-color: #ffffff;
-        border: 1px solid #c8c6c4;
-        padding: 4px 10px;
-        margin: 6px 0px;
-        display: flex;
-        align-items: center;
-        border-radius: 2px;
+        border-bottom: 2px solid #d1d1d1;
+        padding: 8px 15px;
+        margin-bottom: 10px;
     }
-    .fx-label {
+
+    /* Ribbon Section Title */
+    .group-title {
+        font-size: 11px;
+        color: #616161;
+        text-align: center;
+        border-top: 1px solid #e1dfdd;
+        margin-top: 4px;
+        padding-top: 2px;
         font-weight: bold;
+    }
+    
+    /* Streamlit Button Tweaks for Ribbon Look */
+    .stButton > button {
+        border-radius: 3px;
+        border: 1px solid #c8c6c4;
+        background-color: #fcfcfc;
+        color: #323130;
+        font-weight: 500;
+        font-size: 13px;
+        padding: 4px 8px;
+        height: 38px;
+    }
+    .stButton > button:hover {
+        background-color: #e1dfdd;
+        border-color: #107C41;
         color: #107C41;
-        font-style: italic;
-        padding-right: 10px;
-        border-right: 1px solid #e1dfdd;
-        margin-right: 10px;
-    }
-
-    /* Bottom Status Bar */
-    .excel-status-bar {
-        background-color: #107C41;
-        color: white;
-        padding: 4px 15px;
-        font-size: 12px;
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        display: flex;
-        justify-content: space-between;
-        z-index: 999;
-    }
-
-    /* Hide default Streamlit padding */
-    .block-container {
-        padding-top: 0rem;
-        padding-bottom: 2rem;
-        padding-left: 1rem;
-        padding-right: 1rem;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# ---------------------------------------------------------
-# Default Sample Data Initialization
-# ---------------------------------------------------------
-if 'df' not in st.session_state:
-    data = {
-        "Order ID": [f"IN24010{i:03d}" for i in range(1, 16)],
-        "Order Date": ["01-Jan-2024"] * 8 + ["02-Jan-2024"] * 7,
-        "Customer Name": ["Aditya Jadhav", "Rajesh Kapoor", "Tanvi Kumar", "Myra Gupta", "Rutuja Kulkarni", 
-                         "Aadhya Kadam", "Myra Kadam", "Karan Rathod", "Deepak Yadav", "Mansi Shinde",
-                         "Shruti Tiwari", "Prachi Pillai", "Kabir Sharma", "Meera Pawar", "Ishaan Deshmukh"],
-        "City": ["Ranchi", "Ranchi", "Kerala", "Uttar Pradesh", "Kerala", "Jharkhand", "Maharashtra", "Gujarat", "Bengaluru", "Kolkata", "Bhopal", "Coimbatore", "Kochi", "Kolkata", "Jaipur"],
-        "Category": ["Sports & Fitness", "Home & Kitchen", "Mobiles", "Stationery", "Fashion", "Mobiles", "Home & Kitchen", "Fashion", "Sports", "Fashion", "Electronics", "Electronics", "Fashion", "Electronics", "Home"],
-        "Quantity": [3, 1, 1, 1, 3, 1, 1, 1, 1, 5, 2, 1, 1, 3, 1],
-        "Unit Price": [5099, 1499, 493, 204, 2799, 11599, 6999, 1999, 1099, 4399, 3899, 53399, 4099, 1899, 1899]
-    }
-    st.session_state.df = pd.DataFrame(data)
-
-# ---------------------------------------------------------
-# Top Header Bar (MS Excel Title)
-# ---------------------------------------------------------
+# 1. Top Green Window Header
 st.markdown("""
-    <div class="excel-header">
-        <div>📊 <b>Sales_Data.xlsx</b> - Excel AI Suite</div>
-        <div style="font-size:12px;">👤 Premium License Activated</div>
+    <div class="top-header">
+        <span>📗 <b>DataAnalystSuite.xlsx</b> - Enterprise AI Ribbon</span>
+        <span style="font-size:12px; background-color:#0b592e; padding:2px 8px; border-radius:3px;">PRO Mode</span>
     </div>
 """, unsafe_allow_html=True)
 
-# ---------------------------------------------------------
-# Ribbon Tabs Header (Excel Ribbon Menu)
-# ---------------------------------------------------------
-menu_tab = st.radio(
-    "",
-    ["🏠 Home / Data", "📊 Dashboard Builder", "🤖 Ask ChatGPT / AI", "🧹 Power Query", "🗄️ SQL Engine"],
+# 2. Ribbon Tabs Navigation
+selected_tab = st.radio(
+    "Ribbon Tabs",
+    ["🏠 Home / Excel", "🧹 Power Query", "🗄️ SQL Engine", "📊 Power BI Viz", "🤖 AI Assistant"],
     horizontal=True,
     label_visibility="collapsed"
 )
 
-st.markdown("---")
+# 3. Ribbon Action Buttons (Changes dynamically based on selected Tab)
+st.markdown('<div class="ribbon-container">', unsafe_allow_html=True)
 
-# ---------------------------------------------------------
-# Sidebar for Uploads & API Key
-# ---------------------------------------------------------
-with st.sidebar:
-    st.title("⚙️ Software Settings")
-    api_key = st.text_input("🔑 Gemini API Key", type="password", help="Enter Gemini API Key")
-    if api_key:
-        genai.configure(api_key=api_key)
-
-    uploaded_file = st.file_uploader("📂 Open Excel File (.xlsx, .csv)", type=["csv", "xlsx"])
-    if uploaded_file:
-        if uploaded_file.name.endswith(".csv"):
-            st.session_state.df = pd.read_csv(uploaded_file)
-        else:
-            st.session_state.df = pd.read_excel(uploaded_file)
-        st.success("File Loaded!")
-
-# ---------------------------------------------------------
-# Formula Bar Component (fx)
-# ---------------------------------------------------------
-selected_cell = "A1"
-selected_val = st.session_state.df.iloc[0, 0] if not st.session_state.df.empty else ""
-
-col_cell, col_fx = st.columns([1, 11])
-with col_cell:
-    st.text_input("Cell", value="A1", disabled=True, label_visibility="collapsed")
-with col_fx:
-    formula_input = st.text_input("Formula Bar", value=str(selected_val), placeholder="fx Write formula or edit value...", label_visibility="collapsed")
-
-# ---------------------------------------------------------
-# TAB 1: Main Excel Sheet / Grid View
-# ---------------------------------------------------------
-if menu_tab == "🏠 Home / Data":
-    st.markdown("##### 📄 Active Worksheet View")
-    
-    # Interactive Data Grid (Behaves like Excel Spreadsheet)
-    edited_df = st.data_editor(
-        st.session_state.df,
-        num_rows="dynamic",
-        use_container_width=True,
-        height=480,
-        key="excel_grid"
-    )
-    st.session_state.df = edited_df
-
-# ---------------------------------------------------------
-# TAB 2: Dashboard Builder (Popup Window Dialog)
-# ---------------------------------------------------------
-elif menu_tab == "📊 Dashboard Builder":
-    st.subheader("📊 Dashboard & Chart Builder Dialog")
-    
-    col1, col2 = st.columns([1, 2])
-    with col1:
-        st.markdown("### Chart Controls")
-        x_col = st.selectbox("Select Category (X-Axis)", st.session_state.df.columns, index=4)
-        y_col = st.selectbox("Select Values (Y-Axis)", st.session_state.df.select_dtypes(include=[np.number]).columns, index=1)
-        chart_type = st.selectbox("Chart Style", ["Bar Chart", "Line Chart", "Pie Chart", "Histogram"])
-    
-    with col2:
-        st.markdown("### Visualization Output")
-        if chart_type == "Bar Chart":
-            fig = px.bar(st.session_state.df, x=x_col, y=y_col, color=x_col, title=f"{y_col} by {x_col}")
-        elif chart_type == "Line Chart":
-            fig = px.line(st.session_state.df, x=x_col, y=y_col, title=f"{y_col} Trend")
-        elif chart_type == "Pie Chart":
-            fig = px.pie(st.session_state.df, names=x_col, values=y_col, title=f"Distribution of {y_col}")
-        else:
-            fig = px.histogram(st.session_state.df, x=x_col, y=y_col)
-        
-        st.plotly_chart(fig, use_container_width=True)
-
-# ---------------------------------------------------------
-# TAB 3: Ask ChatGPT / AI Analyst
-# ---------------------------------------------------------
-elif menu_tab == "🤖 Ask ChatGPT / AI":
-    st.subheader("💬 Ask AI Data Analyst")
-    query = st.text_input("डेटा से क्या पूछना चाहते हैं? (e.g., 'किस शहर में सबसे ज़्यादा सेल हुई?'):")
-    
-    if st.button("▶ Execute AI Analysis"):
-        if api_key:
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            context = f"Dataset Columns: {list(st.session_state.df.columns)}\nData Preview:\n{st.session_state.df.head(5).to_string()}"
-            response = model.generate_content(f"{context}\n\nQuestion: {query}")
-            st.success("💡 **AI Analysis Result:**")
-            st.write(response.text)
-        else:
-            st.warning("⚠️ कृपया बाईं ओर (Sidebar) में अपनी Gemini API Key दर्ज करें।")
-
-# ---------------------------------------------------------
-# TAB 4: Power Query / Data Cleaning
-# ---------------------------------------------------------
-elif menu_tab == "🧹 Power Query":
-    st.subheader("🧹 Power Query & Transformation Engine")
-    
-    c1, c2, c3 = st.columns(3)
+if selected_tab == "🏠 Home / Excel":
+    c1, c2, c3, c4, c5, c6, c7 = st.columns([1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 3])
     with c1:
-        if st.button("Remove Duplicates"):
-            st.session_state.df = st.session_state.df.drop_duplicates()
-            st.success("Duplicates Removed!")
+        st.button("📂 Open File")
+        st.markdown('<div class="group-title">FILE</div>', unsafe_allow_html=True)
     with c2:
-        if st.button("Drop Missing Values (Nulls)"):
-            st.session_state.df = st.session_state.df.dropna()
-            st.success("Missing Values Removed!")
+        st.button("💾 Save Data")
+        st.markdown('<div class="group-title">FILE</div>', unsafe_allow_html=True)
     with c3:
-        if st.button("Reset Original Data"):
-            st.rerun()
+        st.button("📋 Pivot Table")
+        st.markdown('<div class="group-title">INSERT</div>', unsafe_allow_html=True)
+    with c4:
+        st.button("🔢 Auto Sum")
+        st.markdown('<div class="group-title">FORMULAS</div>', unsafe_allow_html=True)
+    with c5:
+        st.button("🔍 Quick Filter")
+        st.markdown('<div class="group-title">DATA</div>', unsafe_allow_html=True)
+    with c6:
+        st.button("📤 Export CSV")
+        st.markdown('<div class="group-title">EXPORT</div>', unsafe_allow_html=True)
 
-    st.dataframe(st.session_state.df, use_container_width=True)
+elif selected_tab == "🧹 Power Query":
+    c1, c2, c3, c4, c5 = st.columns([1.5, 1.5, 1.5, 1.5, 5])
+    with c1:
+        st.button("✂️ Drop Duplicates")
+        st.markdown('<div class="group-title">CLEAN</div>', unsafe_allow_html=True)
+    with c2:
+        st.button("🚫 Remove Nulls")
+        st.markdown('<div class="group-title">CLEAN</div>', unsafe_allow_html=True)
+    with c3:
+        st.button("🩹 Fill Missing")
+        st.markdown('<div class="group-title">TRANSFORM</div>', unsafe_allow_html=True)
+    with c4:
+        st.button("🔤 Split Column")
+        st.markdown('<div class="group-title">TRANSFORM</div>', unsafe_allow_html=True)
 
-# ---------------------------------------------------------
-# Bottom Excel Sheet Tabs
-# ---------------------------------------------------------
-st.markdown("<br><br>", unsafe_allow_html=True)
-sheet_tab = st.radio("Worksheets", ["📁 Sheet1 (Sales Data)", "📊 Sheet2 (Summary View)", "➕ Add Sheet"], horizontal=True)
+elif selected_tab == "🗄️ SQL Engine":
+    c1, c2, c3, c4 = st.columns([1.5, 1.5, 1.5, 6.5])
+    with c1:
+        st.button("▶️ Run SQL Query")
+        st.markdown('<div class="group-title">EXECUTE</div>', unsafe_allow_html=True)
+    with c2:
+        st.button("📋 Show Schema")
+        st.markdown('<div class="group-title">DATABASE</div>', unsafe_allow_html=True)
+    with c3:
+        st.button("🔄 Clear Query")
+        st.markdown('<div class="group-title">EDITOR</div>', unsafe_allow_html=True)
 
-# ---------------------------------------------------------
-# Excel Bottom Status Bar
-# ---------------------------------------------------------
-total_rows = len(st.session_state.df)
-total_cols = len(st.session_state.df.columns)
-num_cols = st.session_state.df.select_dtypes(include=[np.number]).columns
+elif selected_tab == "📊 Power BI Viz":
+    c1, c2, c3, c4, c5 = st.columns([1.5, 1.5, 1.5, 1.5, 4])
+    with c1:
+        st.button("📊 Bar Chart")
+        st.markdown('<div class="group-title">CHARTS</div>', unsafe_allow_html=True)
+    with c2:
+        st.button("📈 Line Chart")
+        st.markdown('<div class="group-title">CHARTS</div>', unsafe_allow_html=True)
+    with c3:
+        st.button("🍕 Pie Chart")
+        st.markdown('<div class="group-title">CHARTS</div>', unsafe_allow_html=True)
+    with c4:
+        st.button("🎯 Add KPI Card")
+        st.markdown('<div class="group-title">DASHBOARD</div>', unsafe_allow_html=True)
 
-sum_val = st.session_state.df[num_cols[0]].sum() if len(num_cols) > 0 else 0
-avg_val = st.session_state.df[num_cols[0]].mean() if len(num_cols) > 0 else 0
+elif selected_tab == "🤖 AI Assistant":
+    c1, c2, c3, c4 = st.columns([1.5, 1.5, 1.5, 6.5])
+    with c1:
+        st.button("💬 Ask ChatGPT")
+        st.markdown('<div class="group-title">AI AGENT</div>', unsafe_allow_html=True)
+    with c2:
+        st.button("⚡ AI Formula")
+        st.markdown('<div class="group-title">AI AGENT</div>', unsafe_allow_html=True)
+    with c3:
+        st.button("📝 Auto Insights")
+        st.markdown('<div class="group-title">REPORT</div>', unsafe_allow_html=True)
 
-st.markdown(f"""
-    <div class="excel-status-bar">
-        <div>READY &nbsp;|&nbsp; Rows: {total_rows} &nbsp;|&nbsp; Columns: {total_cols}</div>
-        <div>Average: {avg_val:,.2f} &nbsp;|&nbsp; Count: {total_rows} &nbsp;|&nbsp; Sum: {sum_val:,.2f}</div>
-    </div>
-""", unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
+
+# Placeholder Body View
+st.info(f"वर्तमान में **{selected_tab}** रीबन एक्टिव है। ऊपर दिए गए बटनों का लेआउट देखें।")
