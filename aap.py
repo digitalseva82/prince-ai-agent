@@ -2,262 +2,168 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
-import plotly.graph_objects as go
 import google.generativeai as genai
-import duckdb
-import io
 
 # ---------------------------------------------------------
-# Page Configuration & Styling
+# Page Configuration & Styling (Excel Ribbon Theme)
 # ---------------------------------------------------------
 st.set_page_config(
-    page_title="All-in-One Data Analytics Suite",
+    page_title="XLBooster AI Suite",
     page_icon="📊",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    layout="wide"
 )
 
-# Custom CSS
+# Custom CSS for Excel Layout & Modern Ribbon UI
 st.markdown("""
     <style>
-    .main {
-        background-color: #f8f9fa;
+    .stApp {
+        background-color: #f3f2f1;
     }
-    .stApp header {
-        background-color: transparent;
+    .ribbon-bar {
+        background-color: #ffffff;
+        padding: 10px 15px;
+        border-bottom: 2px solid #e1dfdd;
+        margin-bottom: 15px;
+        border-radius: 6px;
+    }
+    .stButton>button {
+        width: 100%;
+        border-radius: 4px;
+        height: 42px;
+        font-weight: 500;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# ---------------------------------------------------------
-# Sidebar Navigation & Setup
-# ---------------------------------------------------------
-st.sidebar.title("📊 AI Analytics Suite")
-st.sidebar.markdown("---")
+# Session State for Sample Data and Modal Popups
+if 'df' not in st.session_state:
+    data = {
+        "Order ID": [f"IN24010{i:03d}" for i in range(1, 21)],
+        "Order Date": ["01-Jan-2024"] * 10 + ["02-Jan-2024"] * 10,
+        "Customer ID": [f"CUST{1000+i}" for i in range(20)],
+        "Customer Name": ["Aditya Jadhav", "Rajesh Kapoor", "Tanvi Kumar", "Myra Gupta", "Rutuja Kulkarni", 
+                         "Aadhya Kadam", "Myra Kadam", "Karan Rathod", "Deepak Yadav", "Mansi Shinde",
+                         "Shruti Tiwari", "Prachi Pillai", "Kabir Sharma", "Meera Pawar", "Ishaan Deshmukh",
+                         "Reyansh Deshmukh", "Ayaan Kulkarni", "Swati Deshmukh", "Siddharth Mishra", "Nisha Bhatia"],
+        "City": ["Ranchi", "Ranchi", "Kerala", "Uttar Pradesh", "Kerala", "Jharkhand", "Maharashtra", "Gujarat", "Bengaluru", "Kolkata",
+                 "Bhopal", "Coimbatore", "Kochi", "Kolkata", "Kolkata", "Jaipur", "Ranchi", "Jharkhand", "Coimbatore", "Jaipur"],
+        "Category": ["Sports & Fitness", "Home & Kitchen", "Mobiles & Accessories", "Books & Stationery", "Fashion",
+                     "Mobiles & Accessories", "Home & Kitchen", "Fashion", "Sports & Fitness", "Fashion",
+                     "Home & Kitchen", "Electronics", "Fashion", "Electronics", "Sports & Fitness", "Home & Kitchen",
+                     "Electronics", "Home & Kitchen", "Mobiles & Accessories", "Home & Kitchen"],
+        "Product": ["Fitness Band", "Cookware Set", "Tempered Glass", "Kids Story Book", "Women Kurti",
+                    "Smart Watch", "Mixer Grinder", "Jeans", "Cricket Bat", "Handbag",
+                    "Air Fryer", "LED TV", "Handbag", "Wireless Mouse", "Yoga Mat", "Pressure Cooker",
+                    "Keyboard", "Mixer Grinder", "Power Bank", "Cookware Set"],
+        "Quantity": [3, 1, 1, 1, 3, 1, 1, 1, 1, 5, 2, 1, 1, 3, 1, 1, 1, 1, 1, 1],
+        "Unit Price": [5099, 1499, 493, 204, 2799, 11599, 6999, 1999, 1099, 4399, 3899, 53399, 4099, 1899, 1899, 1899, 1200, 6999, 1499, 2499]
+    }
+    st.session_state.df = pd.DataFrame(data)
 
-api_key = st.sidebar.text_input("🔑 Google Gemini API Key", type="password", help="अपनी Gemini API Key दर्ज करें।")
+# ---------------------------------------------------------
+# Sidebar - API Key Configuration
+# ---------------------------------------------------------
+st.sidebar.title("🔑 Configuration")
+api_key = st.sidebar.text_input("Google Gemini API Key", type="password", help="अपडेटेड Gemini API Key डालें।")
 
 if api_key:
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-1.5-flash')
 
-tool_choice = st.sidebar.radio(
-    "🛠️ चुनें टूल (Select Tool):",
-    [
-        "📂 Excel / CSV Manager",
-        "🧹 Power Query (Data Clean)",
-        "🗄️ SQL Engine",
-        "📊 Power BI / Tableau (Viz)",
-        "🤖 Ask AI Analyst"
-    ]
+uploaded_file = st.sidebar.file_uploader("Upload Excel/CSV Data", type=["csv", "xlsx"])
+if uploaded_file:
+    if uploaded_file.name.endswith(".csv"):
+        st.session_state.df = pd.read_csv(uploaded_file)
+    else:
+        st.session_state.df = pd.read_excel(uploaded_file)
+    st.sidebar.success("डेटा लोड हो गया!")
+
+# ---------------------------------------------------------
+# Ribbon Toolbar Header (Inspired by XLBooster Screen)
+# ---------------------------------------------------------
+st.markdown("<h3 style='margin-bottom:0px;'>📗 XLBooster AI Add-in Suite</h3>", unsafe_allow_html=True)
+
+with st.container():
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
+    
+    with col1:
+        btn_dashboard = st.button("📊 Dashboard Builder")
+    with col2:
+        btn_ask_ai = st.button("💬 Ask AI / Chat")
+    with col3:
+        btn_clean = st.button("🧹 Data Cleaner")
+    with col4:
+        btn_formula = st.button("⚡ AI Formulas")
+    with col5:
+        btn_stats = st.button("📈 Data Summary")
+    with col6:
+        btn_export = st.button("📥 Export CSV")
+
+st.markdown("---")
+
+# ---------------------------------------------------------
+# Modal Dialogs / Tools Action Handling
+# ---------------------------------------------------------
+
+# 1. Dashboard Builder Dialog (Same as Popup in Screenshot)
+if btn_dashboard:
+    @st.dialog("Dashboard Builder")
+    def show_dashboard_dialog():
+        st.write("डैशबोर्ड बनाने के लिए फ़ील्ड्स और चार्ट्स चुनें:")
+        x_axis = st.selectbox("X-Axis Category Column", st.session_state.df.columns, index=4)
+        y_axis = st.selectbox("Y-Axis Numerical Column", st.session_state.df.select_dtypes(include=[np.number]).columns, index=1)
+        chart_type = st.selectbox("Chart Type", ["Bar Chart", "Line Chart", "Pie Chart", "Scatter Plot"])
+        
+        if st.button("OK / Generate Dashboard", type="primary"):
+            st.session_state.active_chart = (chart_type, x_axis, y_axis)
+            st.rerun()
+
+    show_dashboard_dialog()
+
+# 2. Ask AI Dialog
+if btn_ask_ai:
+    @st.dialog("Ask AI Analyst")
+    def show_ai_dialog():
+        query = st.text_input("डेटा से संबंधित सवाल लिखें:")
+        if st.button("Submit Query"):
+            if api_key:
+                model = genai.GenerativeModel('gemini-1.5-flash')
+                context = f"Data Summary:\n{st.session_state.df.head(5).to_string()}"
+                response = model.generate_content(f"{context}\n\nQuestion: {query}")
+                st.success(response.text)
+            else:
+                st.warning("कृपया Sidebar में Gemini API Key दर्ज करें।")
+
+    show_ai_dialog()
+
+# Render Chart if Generated
+if 'active_chart' in st.session_state:
+    chart_type, x_axis, y_axis = st.session_state.active_chart
+    st.subheader(f"📌 Generated {chart_type}: {y_axis} by {x_axis}")
+    
+    if chart_type == "Bar Chart":
+        fig = px.bar(st.session_state.df, x=x_axis, y=y_axis, color=x_axis)
+    elif chart_type == "Line Chart":
+        fig = px.line(st.session_state.df, x=x_axis, y=y_axis)
+    elif chart_type == "Pie Chart":
+        fig = px.pie(st.session_state.df, names=x_axis, values=y_axis)
+    else:
+        fig = px.scatter(st.session_state.df, x=x_axis, y=y_axis)
+        
+    st.plotly_chart(fig, use_container_width=True)
+    if st.button("Close Chart View"):
+        del st.session_state.active_chart
+        st.rerun()
+
+# ---------------------------------------------------------
+# Interactive Data Grid (Excel Like Table Sheet)
+# ---------------------------------------------------------
+st.subheader("📑 Active Worksheet: Data Preview")
+edited_df = st.data_editor(
+    st.session_state.df,
+    num_rows="dynamic",
+    use_container_width=True,
+    height=450
 )
 
-st.sidebar.markdown("---")
-uploaded_file = st.sidebar.file_uploader("📁 फ़ाइल अपलोड करें (CSV / Excel)", type=["csv", "xlsx"])
-
-# Load Data Helper
-@st.cache_data
-def load_data(file):
-    if file.name.endswith(".csv"):
-        return pd.read_csv(file)
-    else:
-        return pd.read_excel(file)
-
-df = None
-if uploaded_file is not None:
-    try:
-        df = load_data(uploaded_file)
-        st.sidebar.success(f"✅ फ़ाइल सफलतापूर्वक लोड हुई! ({df.shape[0]} Rows, {df.shape[1]} Cols)")
-    except Exception as e:
-        st.sidebar.error(f"फ़ाइल लोड करने में त्रुटि: {e}")
-
-# ---------------------------------------------------------
-# 1. EXCEL / CSV MANAGER
-# ---------------------------------------------------------
-if tool_choice == "📂 Excel / CSV Manager":
-    st.title("📂 Excel & CSV Manager")
-    st.write("यहाँ अपने डेटा का अवलोकन करें, फ़िल्टर करें और सारांश प्राप्त करें।")
-
-    if df is not None:
-        tab1, tab2, tab3 = st.tabs(["📋 Data Preview", "🔢 Summary Stats", "📌 Pivot Table"])
-
-        with tab1:
-            st.subheader("डेटा की झलक (Data Preview)")
-            st.dataframe(df.head(100), use_container_width=True)
-
-        with tab2:
-            st.subheader("संख्यात्मक सांख्यिकी (Summary Statistics)")
-            st.dataframe(df.describe().T, use_container_width=True)
-
-        with tab3:
-            st.subheader("पिवट टेबल (Pivot Table Creator)")
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                index_col = st.selectbox("Row (Index)", options=df.columns)
-            with col2:
-                values_col = st.selectbox("Values", options=df.select_dtypes(include=[np.number]).columns)
-            with col3:
-                agg_func = st.selectbox("Aggregation", ["sum", "mean", "count", "min", "max"])
-
-            if st.button("Pivot Table बनाएं"):
-                pivot = pd.pivot_table(df, values=values_col, index=index_col, aggfunc=agg_func)
-                st.dataframe(pivot, use_container_width=True)
-    else:
-        st.info("💡 कृपया बाईं ओर (Sidebar) से एक CSV या Excel फ़ाइल अपलोड करें।")
-
-# ---------------------------------------------------------
-# 2. POWER QUERY (DATA CLEANING)
-# ---------------------------------------------------------
-elif tool_choice == "🧹 Power Query (Data Clean)":
-    st.title("🧹 Power Query & Data Cleaning Engine")
-    st.write("डेटा की सफ़ाई और ट्रांसफ़ॉर्मेशन एक क्लिक में करें।")
-
-    if df is not None:
-        working_df = df.copy()
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.subheader("⚙️ Cleaning Tools")
-            if st.checkbox("डुपलीकेट हटाएं (Remove Duplicates)"):
-                before = len(working_df)
-                working_df = working_df.drop_duplicates()
-                st.success(f"हटाए गए डुपलीकेट पंक्तियाँ: {before - len(working_df)}")
-
-            if st.checkbox("Null Values हटाएं (Drop Missing Values)"):
-                working_df = working_df.dropna()
-                st.success("सफलतापूर्वक नल वैल्यूज़ हटा दी गईं।")
-
-            if st.checkbox("Null Values भरें (Fill Missing Values)"):
-                fill_val = st.text_input("वैल्यू दर्ज करें (e.g. 0 या N/A)", "0")
-                working_df = working_df.fillna(fill_val)
-                st.success("मिसिंग वैल्यूज भर दी गईं।")
-
-        with col2:
-            st.subheader("📊 डेटा क्वालिटी रिपोर्ट")
-            missing_data = pd.DataFrame({
-                'Column': working_df.columns,
-                'Missing Count': working_df.isnull().sum(),
-                'Data Type': working_df.dtypes.astype(str)
-            })
-            st.dataframe(missing_data, use_container_width=True)
-
-        st.markdown("---")
-        st.subheader("क्लीन किया हुआ डेटा देखें और डाउनलोड करें")
-        st.dataframe(working_df.head(50), use_container_width=True)
-
-        csv_buffer = working_df.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            label="📥 Cleaned CSV डाउनलोड करें",
-            data=csv_buffer,
-            file_name="cleaned_data.csv",
-            mime="text/csv"
-        )
-    else:
-        st.info("💡 डेटा क्लीनिंग शुरू करने के लिए कृपया फ़ाइल अपलोड करें।")
-
-# ---------------------------------------------------------
-# 3. SQL ENGINE
-# ---------------------------------------------------------
-elif tool_choice == "🗄️ SQL Engine":
-    st.title("🗄️ SQL Query Engine (Powered by DuckDB)")
-    st.write("टेबल का नाम **`dataset`** मानकर अपनी SQL क्वैरी चलाएं।")
-
-    if df is not None:
-        con = duckdb.connect(database=':memory:')
-        con.register('dataset', df)
-
-        default_query = "SELECT * FROM dataset LIMIT 10;"
-        user_query = st.text_area("SQL Query लिखें:", value=default_query, height=120)
-
-        if st.button("▶️ Run Query"):
-            try:
-                result = con.execute(user_query).df()
-                st.success(f"क्वोरी सफल रही! ({len(result)} परिणाम मिले)")
-                st.dataframe(result, use_container_width=True)
-            except Exception as e:
-                st.error(f"SQL Error: {e}")
-    else:
-        st.info("💡 SQL का उपयोग करने के लिए पहले फ़ाइल अपलोड करें।")
-
-# ---------------------------------------------------------
-# 4. POWER BI / TABLEAU (VISUALIZATION)
-# ---------------------------------------------------------
-elif tool_choice == "📊 Power BI / Tableau (Viz)":
-    st.title("📊 Power BI & Tableau Style Dashboard Builder")
-    st.write("इंटरएक्टिव और सुंदर विज़ुअलाइज़ेशन जनरेट करें।")
-
-    if df is not None:
-        st.subheader("🎯 KPIs Summary")
-        num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-
-        if num_cols:
-            kpi_cols = st.columns(min(len(num_cols), 4))
-            for i, c in enumerate(num_cols[:4]):
-                kpi_cols[i].metric(label=f"Total {c}", value=f"{df[c].sum():,.2f}")
-
-        st.markdown("---")
-        col1, col2 = st.columns([1, 2])
-
-        with col1:
-            st.subheader("🎨 Chart Controls")
-            chart_type = st.selectbox("Chart Type", ["Bar Chart", "Line Chart", "Scatter Plot", "Pie Chart", "Histogram"])
-            x_axis = st.selectbox("X-Axis (Categorical/Date)", options=df.columns)
-            y_axis = st.selectbox("Y-Axis (Numeric)", options=df.columns)
-            color_by = st.selectbox("Color / Group By (Optional)", options=[None] + list(df.columns))
-
-        with col2:
-            st.subheader("📈 Interactive Visualization")
-            if chart_type == "Bar Chart":
-                fig = px.bar(df, x=x_axis, y=y_axis, color=color_by, title=f"{y_axis} vs {x_axis}")
-            elif chart_type == "Line Chart":
-                fig = px.line(df, x=x_axis, y=y_axis, color=color_by, title=f"{y_axis} over {x_axis}")
-            elif chart_type == "Scatter Plot":
-                fig = px.scatter(df, x=x_axis, y=y_axis, color=color_by, title=f"{y_axis} vs {x_axis}")
-            elif chart_type == "Pie Chart":
-                fig = px.pie(df, names=x_axis, values=y_axis, title=f"Distribution of {y_axis} by {x_axis}")
-            elif chart_type == "Histogram":
-                fig = px.histogram(df, x=x_axis, color=color_by, title=f"Histogram of {x_axis}")
-
-            st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.info("💡 डैशबोर्ड और चार्ट्स बनाने के लिए फ़ाइल अपलोड करें।")
-
-# ---------------------------------------------------------
-# 5. ASK AI ANALYST
-# ---------------------------------------------------------
-elif tool_choice == "🤖 Ask AI Analyst":
-    st.title("🤖 Ask AI Analyst (Natural Language Search)")
-    st.write("अपने डेटा से हिंदी या इंग्लिश में सीधे सवाल पूछें।")
-
-    if not api_key:
-        st.warning("⚠️ कृपया बाईं ओर (Sidebar) में अपनी Gemini API Key दर्ज करें।")
-
-    if df is not None:
-        user_question = st.text_input("अपना सवाल पूछें (e.g. 'मुझे इस डेटा की टॉप 3 मुख्य इनसाइट्स बताओ'):")
-
-        if st.button("🤖 AI से जवाब पूछें"):
-            if not api_key:
-                st.error("API Key उपलब्ध नहीं है।")
-            else:
-                with st.spinner("AI डेटा का विश्लेषण कर रहा है..."):
-                    context = f"""
-                    Dataset Shape: {df.shape}
-                    Columns and Types: {df.dtypes.to_dict()}
-                    First 5 rows:
-                    {df.head(5).to_string()}
-                    """
-                    prompt = f"""
-                    You are an expert Data Analyst AI agent. Answer the user's question accurately based on the provided dataset summary.
-                    Dataset Context:
-                    {context}
-
-                    User Question: {user_question}
-                    """
-                    try:
-                        response = model.generate_content(prompt)
-                        st.subheader("💡 AI का उत्तर:")
-                        st.write(response.text)
-                    except Exception as e:
-                        st.error(f"Gemini API Error: {e}")
-    else:
-        st.info("💡 AI से सवाल पूछने के लिए डेटाफ़ाइल अपलोड करें।")
+# Update state if edited directly in Grid
+st.session_state.df = edited_df
