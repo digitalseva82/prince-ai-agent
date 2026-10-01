@@ -7,7 +7,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Professional Excel/Office Ribbon & App Styling (Custom Colors)
+# Professional Excel/Office Ribbon & App Styling
 st.markdown("""
     <style>
     .stApp {
@@ -31,6 +31,13 @@ st.markdown("""
         color: #E2E8F0;
         font-size: 14px;
         margin: 0;
+    }
+    .file-menu-card {
+        background-color: #ffffff;
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid #E2E8F0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
     </style>
 """, unsafe_allow_html=True)
@@ -68,11 +75,38 @@ with tab_home:
     with col3:
         st.metric(label="System Mode", value="Autonomous")
 
-# --- TAB 2: FILE ---
+# --- TAB 2: FILE (Professional Layout with Menu & Uploader) ---
 with tab_file:
-    st.subheader("📁 File Management & Conversion")
-    st.write("Upload your raw datasets (Excel, CSV) or convert formats instantly.")
-    uploaded_file = st.file_uploader("Upload your file here", type=["csv", "xlsx"])
+    st.subheader("📁 File Management Hub")
+    st.write("Manage your files like a professional desktop software.")
+    
+    # Dividing the File tab into 2 columns (Left: Menu Buttons, Right: Upload Section)
+    menu_col, upload_col = st.columns([1, 2], gap="large")
+    
+    with menu_col:
+        st.markdown('<div class="file-menu-card">', unsafe_allow_html=True)
+        st.markdown("### 🗂️ File Menu")
+        if st.button("📄 New Project", use_container_width=True):
+            st.toast("Started a new session!")
+        if st.button("📂 Open File", use_container_width=True):
+            st.toast("Select a file from the right panel.")
+        if st.button("💾 Save Workspace", use_container_width=True):
+            st.toast("Workspace saved successfully!")
+        if st.button("📊 Export As Excel/CSV", use_container_width=True):
+            st.toast("Go to 'Export & View' tab to download.")
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+    with upload_col:
+        st.markdown('<div class="file-menu-card">', unsafe_allow_html=True)
+        st.markdown("### 📤 Upload Dataset")
+        st.write("Drag and drop or browse your raw Excel or CSV files here.")
+        uploaded_file = st.file_uploader("Choose a CSV or Excel file", type=["csv", "xlsx"])
+        
+        if uploaded_file is not None:
+            st.success(f"File uploaded successfully: **{uploaded_file.name}**")
+        else:
+            st.info("No file uploaded yet. Please select a file to begin.")
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # --- TAB 3: DATA CLEANING ---
 with tab_cleaning:
@@ -106,4 +140,4 @@ with tab_ai:
 with tab_view:
     st.subheader("👁️ Export Cleaned Files")
     st.write("Download your processed data in Excel, CSV, or PDF formats with one click.")
-            
+        
