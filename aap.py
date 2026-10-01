@@ -1,163 +1,135 @@
 import streamlit as st
+import pandas as pd
+import numpy as np
+import plotly.express as px
 
-# ---------------------------------------------------------
-# Page Config (Excel Layout)
-# ---------------------------------------------------------
-st.set_page_config(page_title="Enterprise AI Analytics Suite", page_icon="📗", layout="wide")
+# Page Configuration
+st.set_page_config(
+    page_title="Autonomous Data Analytics Super-App",
+    page_icon="⚡",
+    layout="wide"
+)
 
-# Custom CSS - Microsoft Office / Excel Style Custom Ribbon Styling
+# Custom Professional Styling
 st.markdown("""
     <style>
-    /* Desktop App Background */
-    .stApp {
-        background-color: #f3f2f1;
+    .main-title {
+        font-size: 32px;
+        font-weight: 700;
+        color: #1E3A8A;
+        margin-bottom: 0px;
     }
-    
-    /* Top Header Bar */
-    .top-header {
-        background-color: #107C41;
-        color: white;
-        padding: 6px 16px;
-        font-size: 14px;
-        font-weight: 600;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    /* Ribbon Box Container */
-    .ribbon-container {
-        background-color: #ffffff;
-        border-bottom: 2px solid #d1d1d1;
-        padding: 8px 15px;
-        margin-bottom: 10px;
-    }
-
-    /* Ribbon Section Title */
-    .group-title {
-        font-size: 11px;
-        color: #616161;
-        text-align: center;
-        border-top: 1px solid #e1dfdd;
-        margin-top: 4px;
-        padding-top: 2px;
-        font-weight: bold;
-    }
-    
-    /* Streamlit Button Tweaks for Ribbon Look */
-    .stButton > button {
-        border-radius: 3px;
-        border: 1px solid #c8c6c4;
-        background-color: #fcfcfc;
-        color: #323130;
-        font-weight: 500;
-        font-size: 13px;
-        padding: 4px 8px;
-        height: 38px;
-    }
-    .stButton > button:hover {
-        background-color: #e1dfdd;
-        border-color: #107C41;
-        color: #107C41;
+    .sub-title {
+        font-size: 16px;
+        color: #4B5563;
+        margin-bottom: 20px;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# 1. Top Green Window Header
-st.markdown("""
-    <div class="top-header">
-        <span>📗 <b>DataAnalystSuite.xlsx</b> - Enterprise AI Ribbon</span>
-        <span style="font-size:12px; background-color:#0b592e; padding:2px 8px; border-radius:3px;">PRO Mode</span>
-    </div>
-""", unsafe_allow_html=True)
+# App Header
+st.markdown('<p class="main-title">⚡ Autonomous Data Analytics Super-App</p>', unsafe_allow_html=True)
+st.markdown('<p class="sub-title">AI-Powered Data Cleaning, Analysis & Visualization Dashboard</p>', unsafe_allow_html=True)
 
-# 2. Ribbon Tabs Navigation
-selected_tab = st.radio(
-    "Ribbon Tabs",
-    ["🏠 Home / Excel", "🧹 Power Query", "🗄️ SQL Engine", "📊 Power BI Viz", "🤖 AI Assistant"],
-    horizontal=True,
-    label_visibility="collapsed"
-)
+# Sidebar for File Upload
+st.sidebar.header("📁 Data Management")
+uploaded_file = st.sidebar.file_uploader("Upload CSV or Excel File", type=["csv", "xlsx"])
 
-# 3. Ribbon Action Buttons (Changes dynamically based on selected Tab)
-st.markdown('<div class="ribbon-container">', unsafe_allow_html=True)
+if uploaded_file is not None:
+    try:
+        # Load Data
+        if uploaded_file.name.endswith('.csv'):
+            df_original = pd.read_csv(uploaded_file)
+        else:
+            df_original = pd.read_excel(uploaded_file)
+        
+        st.sidebar.success("File successfully uploaded!")
+        
+        df_cleaned = df_original.copy()
+        
+        # --- SMART AUTO-CLEANING ENGINE ---
+        initial_rows = len(df_cleaned)
+        df_cleaned = df_cleaned.drop_duplicates()
+        duplicates_removed = initial_rows - len(df_cleaned)
+        
+        missing_before = df_cleaned.isnull().sum().sum()
+        for col in df_cleaned.columns:
+            if df_cleaned[col].dtype == 'object':
+                df_cleaned[col] = df_cleaned[col].fillna('Unknown')
+                df_cleaned[col] = df_cleaned[col].astype(str).str.strip()
+            else:
+                df_cleaned[col] = df_cleaned[col].fillna(df_cleaned[col].median())
+        
+        df_cleaned.columns = [str(c).strip().lower().replace(' ', '_') for c in df_cleaned.columns]
 
-if selected_tab == "🏠 Home / Excel":
-    c1, c2, c3, c4, c5, c6, c7 = st.columns([1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 3])
-    with c1:
-        st.button("📂 Open File")
-        st.markdown('<div class="group-title">FILE</div>', unsafe_allow_html=True)
-    with c2:
-        st.button("💾 Save Data")
-        st.markdown('<div class="group-title">FILE</div>', unsafe_allow_html=True)
-    with c3:
-        st.button("📋 Pivot Table")
-        st.markdown('<div class="group-title">INSERT</div>', unsafe_allow_html=True)
-    with c4:
-        st.button("🔢 Auto Sum")
-        st.markdown('<div class="group-title">FORMULAS</div>', unsafe_allow_html=True)
-    with c5:
-        st.button("🔍 Quick Filter")
-        st.markdown('<div class="group-title">DATA</div>', unsafe_allow_html=True)
-    with c6:
-        st.button("📤 Export CSV")
-        st.markdown('<div class="group-title">EXPORT</div>', unsafe_allow_html=True)
+        # --- TABS LAYOUT ---
+        tab1, tab2, tab3, tab4 = st.tabs(["📊 Before & After Preview", "🧹 Cleaning Report", "📈 Power BI Style Visuals", "📥 Export Cleaned Data"])
+        
+        with tab1:
+            st.subheader("Comparison Dashboard")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown("### 🛑 Before Cleaning (Raw Data)")
+                st.dataframe(df_original.head(10), use_container_width=True)
+                st.info(f"Original Shape: {df_original.shape[0]} rows, {df_original.shape[1]} columns")
+            with col2:
+                st.markdown("### ✨ After Cleaning (AI Processed)")
+                st.dataframe(df_cleaned.head(10), use_container_width=True)
+                st.success(f"Cleaned Shape: {df_cleaned.shape[0]} rows, {df_cleaned.shape[1]} columns")
 
-elif selected_tab == "🧹 Power Query":
-    c1, c2, c3, c4, c5 = st.columns([1.5, 1.5, 1.5, 1.5, 5])
-    with c1:
-        st.button("✂️ Drop Duplicates")
-        st.markdown('<div class="group-title">CLEAN</div>', unsafe_allow_html=True)
-    with c2:
-        st.button("🚫 Remove Nulls")
-        st.markdown('<div class="group-title">CLEAN</div>', unsafe_allow_html=True)
-    with c3:
-        st.button("🩹 Fill Missing")
-        st.markdown('<div class="group-title">TRANSFORM</div>', unsafe_allow_html=True)
-    with c4:
-        st.button("🔤 Split Column")
-        st.markdown('<div class="group-title">TRANSFORM</div>', unsafe_allow_html=True)
+        with tab2:
+            st.subheader("🔍 Automated Cleaning Metrics")
+            m1, m2, m3 = st.columns(3)
+            with m1:
+                st.metric(label="Duplicate Rows Removed", value=duplicates_removed)
+            with m2:
+                st.metric(label="Missing Values Fixed", value=int(missing_before))
+            with m3:
+                st.metric(label="Columns Optimized", value=len(df_cleaned.columns))
 
-elif selected_tab == "🗄️ SQL Engine":
-    c1, c2, c3, c4 = st.columns([1.5, 1.5, 1.5, 6.5])
-    with c1:
-        st.button("▶️ Run SQL Query")
-        st.markdown('<div class="group-title">EXECUTE</div>', unsafe_allow_html=True)
-    with c2:
-        st.button("📋 Show Schema")
-        st.markdown('<div class="group-title">DATABASE</div>', unsafe_allow_html=True)
-    with c3:
-        st.button("🔄 Clear Query")
-        st.markdown('<div class="group-title">EDITOR</div>', unsafe_allow_html=True)
+        with tab3:
+            st.subheader("📈 Power BI & AI Visual Analytics")
+            st.write("Generate professional interactive charts instantly without writing formulas or code.")
+            
+            # Select columns for plotting
+            numeric_cols = df_cleaned.select_dtypes(include=['number']).columns.tolist()
+            categorical_cols = df_cleaned.select_dtypes(include=['object', 'category']).columns.tolist()
+            
+            if numeric_cols and categorical_cols:
+                c1, c2, c3 = st.columns(3)
+                with c1:
+                    chart_type = st.selectbox("Select Chart Type", ["Bar Chart", "Line Chart", "Scatter Plot", "Pie Chart"])
+                with c2:
+                    x_axis = st.selectbox("Select X-Axis (Category)", categorical_cols)
+                with c3:
+                    y_axis = st.selectbox("Select Y-Axis (Metric)", numeric_cols)
+                
+                # Plotly Dynamic Chart Generation
+                if chart_type == "Bar Chart":
+                    fig = px.bar(df_cleaned, x=x_axis, y=y_axis, title=f"{y_axis} by {x_axis}", template="plotly_white")
+                elif chart_type == "Line Chart":
+                    fig = px.line(df_cleaned, x=x_axis, y=y_axis, title=f"{y_axis} over {x_axis}", template="plotly_white")
+                elif chart_type == "Scatter Plot":
+                    fig = px.scatter(df_cleaned, x=x_axis, y=y_axis, title=f"{y_axis} vs {x_axis}", template="plotly_white")
+                elif chart_type == "Pie Chart":
+                    fig = px.pie(df_cleaned, names=x_axis, values=y_axis, title=f"Distribution of {y_axis} by {x_axis}", template="plotly_white")
+                
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.warning("Your dataset needs at least one numeric and one categorical column to generate charts.")
 
-elif selected_tab == "📊 Power BI Viz":
-    c1, c2, c3, c4, c5 = st.columns([1.5, 1.5, 1.5, 1.5, 4])
-    with c1:
-        st.button("📊 Bar Chart")
-        st.markdown('<div class="group-title">CHARTS</div>', unsafe_allow_html=True)
-    with c2:
-        st.button("📈 Line Chart")
-        st.markdown('<div class="group-title">CHARTS</div>', unsafe_allow_html=True)
-    with c3:
-        st.button("🍕 Pie Chart")
-        st.markdown('<div class="group-title">CHARTS</div>', unsafe_allow_html=True)
-    with c4:
-        st.button("🎯 Add KPI Card")
-        st.markdown('<div class="group-title">DASHBOARD</div>', unsafe_allow_html=True)
+        with tab4:
+            st.subheader("💾 Download Your Cleaned File")
+            csv_data = df_cleaned.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="📥 Download Cleaned CSV File",
+                data=csv_data,
+                file_name="cleaned_professional_data.csv",
+                mime="text/csv",
+            )
 
-elif selected_tab == "🤖 AI Assistant":
-    c1, c2, c3, c4 = st.columns([1.5, 1.5, 1.5, 6.5])
-    with c1:
-        st.button("💬 Ask ChatGPT")
-        st.markdown('<div class="group-title">AI AGENT</div>', unsafe_allow_html=True)
-    with c2:
-        st.button("⚡ AI Formula")
-        st.markdown('<div class="group-title">AI AGENT</div>', unsafe_allow_html=True)
-    with c3:
-        st.button("📝 Auto Insights")
-        st.markdown('<div class="group-title">REPORT</div>', unsafe_allow_html=True)
+    except Exception as e:
+        st.error(f"An error occurred while processing the file: {e}")
 
-st.markdown('</div>', unsafe_allow_html=True)
-
-# Placeholder Body View
-st.info(f"वर्तमान में **{selected_tab}** रीबन एक्टिव है। ऊपर दिए गए बटनों का लेआउट देखें।")
+else:
+    st.info("👈 Please upload a CSV or Excel file from the sidebar to begin.")
